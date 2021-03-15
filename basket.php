@@ -3,25 +3,92 @@
 class Basket
 {
     protected $catalogue;
-    protected $deliveryCalculator;
-    protected $specialOffers;
     protected $products;
 
-    public function __construct($catalogue, $specialOffers, $deliveryCalculator)
+    public function __construct($catalogue)
     {
         $this->catalogue = $catalogue;
-        $this->specialOffers = $specialOffers;
-        $this->deliveryCalculator = $deliveryCalculator;
+
+        return $this;
     }
 
     public function addProducts($products)
     {
         $this->products = $products;
+
+        return $this;
     }
 
     public function total()
     {
-        return 11.22;
+        $total = 0;
+
+        foreach ($this->products as $code) {
+            $product = $this->catalogue->find($code);
+            $total += $product['price'];
+        }
+
+        $total += (new SpecialOffers($this->catalogue, $this->products))->getDiscount();
+        $total += DeliveryCalculator::calc($total);
+
+        return $total;
+    }
+}
+
+class Catalogue
+{
+    protected $products;
+
+    public function __construct($products)
+    {
+        $this->products = $products;
+    }
+
+    public function find($code)
+    {
+        return $this->products[0];
+    }
+}
+
+class SpecialOffers
+{
+    protected $catalogue;
+    protected $products;
+
+    public function __construct($catalogue, $products)
+    {
+        $this->catalogue = $catalogue;
+        $this->products = $products;
+    }
+
+    public function getDiscount()
+    {
+        $discount = 0;
+
+        $discount += $this->getSecondRedDiscount();
+
+        return 0;
+    }
+
+    public function getSecondRedDiscount()
+    {
+        return 0;
+    }
+}
+
+class DeliveryCalculator
+{
+    public static function calc($total)
+    {
+        if ($total >= 90) {
+            return 0;
+        }
+
+        if ($total >= 50) {
+            return 2.95;
+        }
+
+        return 4.95;
     }
 }
 
@@ -30,7 +97,7 @@ $products = [
     ['product' => 'Green Widget', 'code' => 'G01', 'price' => 24.95],
     ['product' => 'Blue Widget', 'code' => 'B01', 'price' => 7.95],
 ];
-// [49.99 => 4.95, 89.99 => 2.95, 90 => 0]
-echo (new Basket(new Catalogue($products), new SpecialOffers(), new DeliveryCalculator()))
+
+echo (new Basket(new Catalogue($products)))
     ->addProducts(['B01', 'G01'])
     ->total();
