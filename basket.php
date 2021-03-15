@@ -28,7 +28,7 @@ class Basket
             $total += $product['price'];
         }
 
-        $total += (new SpecialOffers($this->catalogue, $this->products))->getDiscount();
+        $total -= (new SpecialOffers($this->catalogue, $this->products))->getDiscount();
         $total += DeliveryCalculator::calc($total);
 
         return $total;
@@ -46,7 +46,13 @@ class Catalogue
 
     public function find($code)
     {
-        return $this->products[0];
+        foreach ($this->products as $product) {
+            if ($product['code'] === $code) {
+                return $product;
+            }
+        }
+
+        return null;
     }
 }
 
@@ -67,12 +73,31 @@ class SpecialOffers
 
         $discount += $this->getSecondRedDiscount();
 
-        return 0;
+        return $discount;
     }
 
     public function getSecondRedDiscount()
     {
+        $redWidgetCode = 'R01';
+        if ($this->getProductQty($redWidgetCode) > 1) {
+            $redWidget = $this->catalogue->find($redWidgetCode);
+
+            return round($redWidget['price'] / 2, 2);
+        }
+
         return 0;
+    }
+
+    protected function getProductQty($code)
+    {
+        $qty = 0;
+        foreach ($this->products as $productCode) {
+            if ($productCode === $code) {
+                $qty++;
+            }
+        }
+
+        return $qty;
     }
 }
 
@@ -99,5 +124,8 @@ $products = [
 ];
 
 echo (new Basket(new Catalogue($products)))
-    ->addProducts(['B01', 'G01'])
+    // ->addProducts(['B01', 'G01'])
+    // ->addProducts(['R01', 'R01'])
+    // ->addProducts(['R01', 'G01'])
+    ->addProducts(['B01', 'B01', 'R01', 'R01', 'R01'])
     ->total();
